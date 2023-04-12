@@ -2,7 +2,7 @@
 # Install necessary packages
 - name: Install mysql packages
   apt:
-    name: 
+    name:
       - mysql-server
       - python3-pymysql
     update_cache: yes
@@ -32,8 +32,8 @@
 # to be completed
 - name: Create bookstack user
   community.mysql.mysql_user:
-    name:
-    password:
-    host:
-    priv: 'bookstack.*:ALL,GRANT'
+    name: bookstack
+    password: bookstack
+    host: 34.220.181.178
+    priv: "bookstack.*:ALL,GRANT"
     login_unix_socket: /run/mysqld/mysqld.sock

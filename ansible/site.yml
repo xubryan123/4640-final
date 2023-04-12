@@ -5,6 +5,7 @@
   remote_user: ubuntu
   become: true
   roles:
+    - database
     - bookstack
 # Role to setup the bookstack server
 # to be completed

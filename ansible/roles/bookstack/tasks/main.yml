@@ -1,39 +1,93 @@
 ---
-# Install necessary packages
-- name: Install mysql packages
+# Install the necessary packages
+- name: Install package requirements for bookstack
   apt:
     name:
-      - mysql-server
-      - python3-pymysql
+      - git
+      - unzip
+      - apache2
+      - php8.1
+      - curl
+      - php8.1-curl
+      - php8.1-mbstring
+      - php8.1-ldap
+      - php8.1-xml
+      - php8.1-zip
+      - php8.1-gd
+      - php8.1-mysql
+      - mysql-server-8.0
+      - libapache2-mod-php8.1
+      - composer
     update_cache: yes
 
-# Copy the mysql config file
-# This will overwrite the default file
-# This makes the database accessible from other servers, changes bind: 127.0.0.1 to bind: 0.0.0.0
-- name: Copy mysql conf to server
-  copy:
-    src: mysqld.cnf
-    dest: /etc/mysql/mysql.conf.d/mysqld.cnf
+# Clone the bookstack repository
+# To be completed
+- name: Clone BookStack repository
+  git:
+    repo: https://github.com/BookStackApp/BookStack.git
+    dest: /var/www
+    version: bookstack
+    depth: 1
+    single_branch: true
 
-# Restart the mysql service after changing config file above
-- name: Restart mysql service
+# Install the bookstack dependencies with Composer.
+# To be completed
+- name: Install BookStack Composer dependencies
+    php /usr/bin/composer install --no-dev --no-plugins
+  shell: |
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    php composer-setup.php --quiet
+    rm composer-setup.php
+    mv composer.phar /usr/local/bin/composer
+    cd "$BOOKSTACK_DIR" || exit
+    export COMPOSER_ALLOW_SUPERUSER=1
+    php /usr/local/bin/composer install --no-dev --no-plugins
+
+# Create .env file from template
+# To be completed
+- name: create .env file from template
+  template:
+    dest: /var/www/bookstack/.env
+    src: templates/env.j2
+
+# Generate application key
+- name: generate application key
+  shell: |
+    cd {{ BOOKSTACK_DIR }}
+    php artisan key:generate --no-interaction --force
+    php artisan migrate --no-interaction --force
+
+# Change file permissions in bookstack directory
+- name: change permissions
+  shell: |
+    cd {{ BOOKSTACK_DIR }}
+    chown -R root:www-data ./
+    chmod -R 755 ./
+    chmod -R 775 bootstrap/cache public/uploads storage
+    git config core.fileMode false
+
+# Enable apache modules
+# To be completed
+- name: enable apache modules
+  shell: a2enmod rewrite
+    a2enmod php8.1
+
+# Create apache config file from template
+# To be completed
+- name: create apache config
+  template:
+    dest: /etc/apache2/sites-available/bookstack.conf
+    src: templates/bookstack.conf.j2
+
+# Enable the bookstack apache config
+- name: disable default apache config and enable bookstack conf
+  shell: |
+    a2dissite 000-default.conf
+    a2ensite bookstack.conf
+
+# Restart apache service
+# To be completed
+- name: restart nginx
   service:
-    name: mysql
+    name: nginx
     state: restarted
-
-# Create a bookstack database
-- name: Create bookstack database
-  community.mysql.mysql_db:
-    name: "{{ DB_NAME }}"
-    state: present
-    login_unix_socket: /run/mysqld/mysqld.sock
-
-# Create a bookstack user
-# to be completed
-- name: Create bookstack user
-  community.mysql.mysql_user:
-    name: bookstack
-    password: bookstack
-    host: 34.220.181.178
-    priv: "bookstack.*:ALL,GRANT"
-    login_unix_socket: /run/mysqld/mysqld.sock
