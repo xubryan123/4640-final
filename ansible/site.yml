@@ -1,7 +1,7 @@
 ---
 # Role to setup the database server
 - name: Roles for the database servers
-  hosts: tag_Server_db_server
+  hosts: tag_Name_ubuntu_web
   remote_user: ubuntu
   become: true
   roles:
